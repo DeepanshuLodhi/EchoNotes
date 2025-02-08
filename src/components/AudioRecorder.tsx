@@ -188,7 +188,7 @@ export default function AudioRecorder({ onTranscription }: AudioRecorderProps) {
         });
       }, 1000);
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error("Error Accessing Microphone:", error);
       toast.error("Unable to access microphone.");
     }
   };
