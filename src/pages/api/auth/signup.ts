@@ -1,30 +1,29 @@
-import { NextResponse } from "next/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 
-export const runtime = "nodejs";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
+  }
 
-export async function POST(req: Request) {
   try {
     await connectToDatabase();
 
-    const { email, password } = await req.json();
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return NextResponse.json(
-        { message: "Email and password required" },
-        { status: 400 }
-      );
+      return res.status(400).json({ message: "Email and password required" });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return NextResponse.json(
-        { message: "User already exists" },
-        { status: 400 }
-      );
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,21 +34,14 @@ export async function POST(req: Request) {
     });
 
     const token = jwt.sign(
-      { userId: user._id.toString() },
+      { userId: user._id },
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
 
-    return NextResponse.json(
-      { token },
-      { status: 201 }
-    );
+    return res.status(201).json({ token });
   } catch (error) {
     console.error("Signup error:", error);
-
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
